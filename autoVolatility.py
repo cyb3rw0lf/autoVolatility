@@ -40,16 +40,18 @@ class ThreadVol(threading.Thread):
             #grabs plugin from queue
             plugin = self.queue.get()
 
-            # Create plugin dir
-            plugin_dir = self.out_dir+"/"+plugin
-            if not os.path.exists(plugin_dir):
-                os.makedirs(plugin_dir)
-            
+            # Set plugin dir
+            plugin_dir = self.out_dir            
             # Run volatility
             if ("dump" in plugin and not plugin in dump_noDir) or (plugin in dump_plugins):
+                # Sub-directory for plugin that dump files
+                plugin_dir = plugin_dir+"/"+plugin
                 cmd = self.vol_path+" -f "+ self.memfile+" --profile="+self.profile+" "+plugin+"  --dump-dir="+plugin_dir
             else:
                 cmd = self.vol_path+" -f "+ self.memfile+" --profile="+self.profile+" "+plugin
+            # Create plugin dir
+            if not os.path.exists(plugin_dir):
+                os.makedirs(plugin_dir)
             print cmd
             pw = Popen(cmd.split(), stdout=PIPE, stderr=PIPE)
             stdout,stderr = pw.communicate()
@@ -90,7 +92,7 @@ def main(argv):
         print hlp
         sys.exit(2)
 
-    memfile, console, profile, directory, use_all, vol_path, threads = "", "", "", "", False, "volatility", 8
+    memfile, console, profile, directory, use_all, vol_path, threads = "", "", "", "", False, "vol2", 8
 
     for opt, arg in opts:
         if opt == '-h':
