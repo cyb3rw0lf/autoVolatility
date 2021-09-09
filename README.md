@@ -1,6 +1,6 @@
 # AutoVolatility
 
-AutoVolatility is a script made by https://github.com/carlospolop to run several volatility plugins at the same time
+AutoVolatility is a script made by [carlospolop](https://github.com/carlospolop) to run several volatility plugins at the same time
 
 ## How to use
 
