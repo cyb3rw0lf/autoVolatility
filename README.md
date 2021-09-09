@@ -6,16 +6,23 @@ AutoVolatility is a script made to run several volatility plugins at the same ti
 
 AutoVolatility will create a new folder in the output directory for each plugin executed.
 
-You can run the "main" volatility plugins doing
+You can run the "main" volatility plugins doing, default directory is the `MEMFILE` name + `_autovol`
+```python
+python autoVolatility.py -f MEMFILE
+``` 
 
+Can you specify output directory:
 ```python
 python autoVolatility.py -f MEMFILE -d OUT_DIRECTORY
 ``` 
 
-Be default autoVolatility tries to execute `volatility`. If you do not have volatility executable in path or with this name, you can set where your volatility executable is using the option `-e`
-
+The variable `volatility_cmd` is the default command used to run volatility. You can either modify that variable with your own path:
 ```python
-python autoVolatility.py -f MEMFILE -d OUT_DIRECTORY -e /home/user/tools/volatility/vol.py
+volatility_cmd = "vol2 --plugins=/opt/volatility2/community"
+```
+or use the option `-e`. Important is that the command is able to use community plugins.
+```python
+python autoVolatility.py -f MEMFILE -e "/usr/loca/bin/vol.py --plugins==/path/to/plugins"
 ```
 
 AutoVolatility will use the plugin "imageinfo" to figure out the profile to use. But if you know the profile, you can set it using the option `-p`
@@ -42,15 +49,89 @@ If want autoVolatility to run other plugins, you can do so using the option `-c`
 python autoVolatility.py -f MEMFILE -d OUT_DIRECTORY -c amcache,auditpol,cachedump,clipboard,cmdline,cmdscan # Only these plugins will be executed
 ```
 
-The plugins executed by default are:
+The plugins executed by default are the following:
+(the key of the dictionary if going to be the name of the sub-folder, for dumps there's an additional sub-folder for each plugin)
 
 ```python
+pluginsDict = {
+    "network": ["connections",
+                "connscan",
+                "sessions",
+                "sockets",
+                "sockscan",
+                "netscan"],
 
-dump_plugins = ["dumpcerts", "dumpregistry", "dumpfiles", "dumpregistry"]
+    "processes": ["pslist",
+                  "psscan",
+                  "pstree",
+                  "psxview",
+                  "getsids"],
 
-plugins = ["amcache", "auditpol", "cachedump", "clipboard", "cmdline", "cmdscan", "connections", "connscan", "consoles", "deskscan", "devicetree", "dlllist",
-            "envars", "getservicesids", "handles", "hashdump", "hibinfo", "hivelist", "hivescan", "iehistory", "ldrmodules", "lsadump", "malfind", "mbrparser", "memmap", "mftparser", "modules", "notepad", 
-            "privs", "pslist", "psscan", "pstree", "psxview", "qemuinfo", "servicediff", "sessions", "sockets", "sockscan", "ssdt", "strings", "svcscan", "symlinkscan", "thrdscan", "verinfo", "windows", "wintree"]
+    "registry": ["hivelist",
+                 'printkey -K "Software\Microsoft\Windows\CurrentVersion\Run"'],
+
+    "services": ["getservicesids",
+                 "servicediff",
+                 "svcscan -v"],
+
+    "cmd": ["cmdline",
+            "cmdscan",
+            "consoles"],
+
+    "browsers": ["chromecookies",
+                 "chromedownloadchains",
+                 "chromedownloads",
+                 "chromehistory",
+                 "chromesearchterms",
+                 "chromevisits",
+                 "firefoxcookies",
+                 "firefoxdownloads",
+                 "firefoxhistory",
+                 "iehistory"],
+
+    "malware": ["malfind",
+                "malfinddeep",
+                "malfofind",
+                "malprocfind",
+                "malthfind"],
+
+    "dumps": ["cachedump",
+              "dumpcerts",
+              "dumpregistry",
+              "dumpfiles",
+              "dumpregistry",
+              "hashdump",
+              "screenshot",
+              "networkpackets"],
+
+    "others": ["clipboard",
+               "amcache",
+               "auditpol",
+               "deskscan",
+               "devicetree",
+               "dlllist",
+               "envars",
+               "handles",
+               "hibinfo",
+               "ldrmodules",
+               "lsadump",
+               "mbrparser",
+               "memmap",
+               "mftparser",
+               "modules",
+               "notepad",
+               "privs",
+               "qemuinfo",
+               "ssdt",
+               "strings",
+               "symlinkscan",
+               "thrdscan",
+               "verinfo",
+               "windows",
+               "wintree"]
+}
+
+extra = ["psscan --output=dot --output-file=psscan.dot"]
 ```
 
 The plugins executed using the option `-a` are:
