@@ -9,26 +9,101 @@ from subprocess import Popen, PIPE
 queue = Queue.Queue()
 start = time.time()
 
-dump_plugins = ["dumpcerts", "dumpregistry", "dumpfiles", "dumpregistry", "servicediff"]
-
-# plugins_default = ["amcache", "auditpol", "cachedump", "clipboard", "cmdline", "cmdscan", "connections", "connscan", "consoles", "deskscan", "devicetree", "dlllist",
-#             "envars", "getservicesids", "handles", "hashdump", "hibinfo", "hivelist", "hivescan", "iehistory", "ldrmodules", "lsadump", "malfind", "mbrparser", "memmap", "mftparser", "modules", "notepad", 
-#             "privs", "pslist", "psscan", "pstree", "psxview", "qemuinfo", "servicediff", "sessions", "sockets", "sockscan", "ssdt", "strings", "svcscan", "symlinkscan", "thrdscan", "verinfo", "windows", "wintree"]
+# The command to run volatility with all community plugins
+volatility_cmd = "vol2 --plugins=/opt/volatility2/community"
 
 # Use community plugins
-plugins = ["amcache", "auditpol", "cachedump", "clipboard", "cmdline", "cmdscan", "connections", "connscan", "consoles", "deskscan", "devicetree", "dlllist",
-            "envars", "getservicesids", "handles", "hashdump", "hibinfo", "hivelist", "hivescan", "iehistory", "ldrmodules", "lsadump", "malfind", "mbrparser", "memmap", "mftparser", "modules", "notepad", 
-            "privs", "pslist", "psscan", "pstree", "psxview", "qemuinfo", "servicediff", "sessions", "sockets", "sockscan", "ssdt", "strings", "svcscan", "symlinkscan", "thrdscan", "verinfo", "windows", "wintree"]
+pluginsDict = {
+    "network": ["connections",
+                "connscan",
+                "sessions",
+                "sockets",
+                "sockscan",
+                "netscan"],
+
+    "processes": ["pslist",
+                  "psscan",
+                  "pstree",
+                  "psxview",
+                  "getsids"],
+
+    "registry": ["hivelist",
+                 'printkey -K "Software\Microsoft\Windows\CurrentVersion\Run"'],
+
+    "services": ["getservicesids",
+                 "servicediff",
+                 "svcscan -v"],
+
+    "cmd": ["cmdline",
+            "cmdscan",
+            "consoles"],
+
+    "browsers": ["chromecookies",
+                 "chromedownloadchains",
+                 "chromedownloads",
+                 "chromehistory",
+                 "chromesearchterms",
+                 "chromevisits",
+                 "firefoxcookies",
+                 "firefoxdownloads",
+                 "firefoxhistory",
+                 "iehistory"],
+
+    "malware": ["malfind",
+                "malfinddeep",
+                "malfofind",
+                "malprocfind",
+                "malthfind"],
+
+    "dumps": ["cachedump",
+              "dumpcerts",
+              "dumpregistry",
+              "dumpfiles",
+              "dumpregistry",
+              "hashdump",
+              "screenshot",
+              "networkpackets"],
+
+    "others": ["clipboard",
+               "amcache",
+               "auditpol",
+               "deskscan",
+               "devicetree",
+               "dlllist",
+               "envars",
+               "handles",
+               "hibinfo",
+               "ldrmodules",
+               "lsadump",
+               "mbrparser",
+               "memmap",
+               "mftparser",
+               "modules",
+               "notepad",
+               "privs",
+               "qemuinfo",
+               "ssdt",
+               "strings",
+               "symlinkscan",
+               "thrdscan",
+               "verinfo",
+               "windows",
+               "wintree"]
+}
+
+plugins = [elem for sublist in pluginsDict.values() for elem in sublist]
 
 plugins_all = [ "amcache", "apihooks", "atoms", "atomscan", "auditpol", "bigpools", "bioskbd", "cachedump", "callbacks", "clipboard", "cmdline", "cmdscan", "connections", "connscan", "consoles", "crashinfo",
-                "deskscan", "devicetree", "dlldump", "dlllist", "driverirp", "drivermodule", "driverscan", "editbox", "envars", "eventhooks", "evtlogs", "filescan", 
+                "deskscan", "devicetree", "dlldump", "dlllist", "driverirp", "drivermodule", "driverscan", "editbox", "envars", "eventhooks", "evtlogs", "filescan",
                 "gahti", "gditimers", "gdt", "getservicesids", "getsids", "handles", "hashdump", "hibinfo", "hivelist", "hivescan", "hpakextract", "hpakinfo", "idt", "iehistory", "imagecopy", "imageinfo",
                 "joblinks", "kdbgscan", "kpcrscan", "ldrmodules", "lsadump", "malfind", "mbrparser", "memdump", "memmap", "messagehooks", "mftparser", "moddump", "modscan", "modules", "multiscan", "mutantscan",
                 "notepad", "objtypescan", "patcher", "printkey", "privs", "procdump", "pslist", "psscan", "pstree", "psxview", "qemuinfo", "raw2dmp", "sessions", "shellbags", "shimcache",
                 "shutdowntime", "sockets", "sockscan", "ssdt", "strings", "svcscan", "symlinkscan", "thrdscan", "threads", "timeliner", "timers", "truecryptmaster", "truecryptpassphrase", "truecryptsummary",
                 "unloadedmodules", "userassist", "userhandles", "vaddump", "vadinfo", "vadtree", "vadwalk", "vboxinfo", "verinfo", "vmwareinfo", "windows", "wintree", "wndscan"]
 
-dump_noDir = ["hashdump"]
+dump_noDir = ["hashdump", "cachedump"]
+extra = ["psscan --output=dot --output-file=psscan.dot"]
+
 
 class ThreadVol(threading.Thread):
     """Threaded Volatility"""
@@ -46,9 +121,13 @@ class ThreadVol(threading.Thread):
             plugin = self.queue.get()
 
             # Set plugin dir
-            plugin_dir = self.out_dir            
+            if find_key(pluginsDict, plugin):
+                plugin_dir = self.out_dir+"/"+find_key(pluginsDict, plugin)
+            else:
+                plugin_dir = self.out_dir
+
             # Run volatility
-            if ("dump" in plugin and not plugin in dump_noDir) or (plugin in dump_plugins):
+            if find_key(pluginsDict, plugin) == "dumps" and not plugin in dump_noDir:
                 # Sub-directory for plugin that dump files
                 plugin_dir = plugin_dir+"/"+plugin
                 cmd = self.vol_path+" -f "+ self.memfile+" --profile="+self.profile+" "+plugin+"  --dump-dir="+plugin_dir
@@ -63,13 +142,15 @@ class ThreadVol(threading.Thread):
             if stderr: print plugin + ": " + stderr
 
             # Write the output
-            with open(plugin_dir+"/"+plugin+".txt",'w') as f:
-                f.write(stdout)
+            if plugin not in extra:
+                with open(plugin_dir+"/"+plugin+".txt",'w') as f:
+                    f.write(stdout)
 
             #signals to queue job is done
             self.queue.task_done()
 
-
+def find_key(input_dict, value):
+    return next((k for k, v in input_dict.items() if value in v), None)
 
 # Get profile of a memfile
 def getProfile(file, vol_path):
@@ -97,7 +178,7 @@ def main(argv):
         print hlp
         sys.exit(2)
 
-    memfile, console, profile, directory, use_all, vol_path, threads = "", "", "", "", False, "vol2", 8
+    memfile, console, profile, directory, use_all, vol_path, threads = "", "", "", "", False, volatility_cmd, 8
 
     for opt, arg in opts:
         if opt == '-h':
@@ -110,11 +191,11 @@ def main(argv):
             if not os.path.exists(memfile):
                 print "File in path "+memfile+" does not exists"
                 sys.exit()
-        
+
         elif opt in ("-d","--directory"):
             directory = arg
             if not os.path.exists(directory):
-                try: 
+                try:
                     os.makedirs(directory)
                 except:
                     print "Not a directory or not enough permissions: "+directory
@@ -128,13 +209,13 @@ def main(argv):
 
         elif opt in ("-c", "--console"):
             console = arg
-        
+
         elif opt in ("-a", "--all"):
             use_all = True
 
         elif opt in ("-e", "--volatility-path"):
             vol_path = arg
-        
+
         elif opt in ("-t", "--threads"):
             threads = int(arg)
 
@@ -142,7 +223,7 @@ def main(argv):
 
     if not directory:
         print "Set a directory using the option -d"
-        print hlp    
+        print hlp
         sys.exit()
 
     # Get profile of the memfile
@@ -155,7 +236,9 @@ def main(argv):
 
     #populate queue with data
     if console == "": # If not console, default plugins
-        for plugin in dump_plugins:
+        # for plugin in dump_plugins:
+        #     queue.put(plugin)
+        for plugin in extra:
             queue.put(plugin)
 
         if use_all:
@@ -164,7 +247,7 @@ def main(argv):
         else:
             for plugin in plugins:
                 queue.put(plugin)
-    
+
     else: #If console, only pllugins defined in console
         plugins = console.split(",")
         for plugins in plugin:
@@ -177,14 +260,10 @@ def main(argv):
         t.start()
         time.sleep(0.1)
 
-
-
-    #wait on the queue until everything has been processed     
+    #wait on the queue until everything has been processed
     queue.join()
     print "Elapsed Time: %s" % (time.time() - start)
 
-
-    
 
 if __name__ == "__main__":
     main(sys.argv[1:])
