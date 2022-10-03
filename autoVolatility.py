@@ -2,7 +2,9 @@
 import Queue
 import threading
 import time
-import sys, os, getopt
+import sys
+import os
+import getopt
 
 from subprocess import Popen, PIPE
 
@@ -55,7 +57,8 @@ pluginsDict = {
                 "malprocfind",
                 "malthfind"],
 
-    "dumps": ["cachedump",
+    "dumps": ["procdump",
+              "cachedump",
               "dumpcerts",
               "dumpregistry",
               "dumpfiles",
@@ -94,13 +97,16 @@ pluginsDict = {
 
 plugins = [elem for sublist in pluginsDict.values() for elem in sublist]
 
-plugins_all = [ "amcache", "apihooks", "atoms", "atomscan", "auditpol", "bigpools", "bioskbd", "cachedump", "callbacks", "clipboard", "cmdline", "cmdscan", "connections", "connscan", "consoles", "crashinfo",
-                "deskscan", "devicetree", "dlldump", "dlllist", "driverirp", "drivermodule", "driverscan", "editbox", "envars", "eventhooks", "evtlogs", "filescan",
-                "gahti", "gditimers", "gdt", "getservicesids", "getsids", "handles", "hashdump", "hibinfo", "hivelist", "hivescan", "hpakextract", "hpakinfo", "idt", "iehistory", "imagecopy", "imageinfo",
-                "joblinks", "kdbgscan", "kpcrscan", "ldrmodules", "lsadump", "malfind", "mbrparser", "memdump", "memmap", "messagehooks", "mftparser", "moddump", "modscan", "modules", "multiscan", "mutantscan",
-                "notepad", "objtypescan", "patcher", "printkey", "privs", "procdump", "pslist", "psscan", "pstree", "psxview", "qemuinfo", "raw2dmp", "sessions", "shellbags", "shimcache",
-                "shutdowntime", "sockets", "sockscan", "ssdt", "strings", "svcscan", "symlinkscan", "thrdscan", "threads", "timeliner", "timers", "truecryptmaster", "truecryptpassphrase", "truecryptsummary",
-                "unloadedmodules", "userassist", "userhandles", "vaddump", "vadinfo", "vadtree", "vadwalk", "vboxinfo", "verinfo", "vmwareinfo", "windows", "wintree", "wndscan"]
+plugins_all = [
+    "amcache", "apihooks", "atoms", "atomscan", "auditpol", "bigpools", "bioskbd", "cachedump", "callbacks", "clipboard", "cmdline", "cmdscan",
+    "connections", "connscan", "consoles", "crashinfo", "deskscan", "devicetree", "dlldump", "dlllist", "driverirp", "drivermodule", "driverscan",
+    "editbox", "envars", "eventhooks", "evtlogs", "filescan", "gahti", "gditimers", "gdt", "getservicesids", "getsids", "handles", "hashdump",
+    "hibinfo", "hivelist", "hivescan", "hpakextract", "hpakinfo", "idt", "iehistory", "imagecopy", "imageinfo", "joblinks", "kdbgscan", "kpcrscan",
+    "ldrmodules", "lsadump", "malfind", "mbrparser", "memdump", "memmap", "messagehooks", "mftparser", "moddump", "modscan", "modules", "multiscan",
+    "mutantscan", "notepad", "objtypescan", "patcher", "printkey", "privs", "procdump", "pslist", "psscan", "pstree", "psxview", "qemuinfo",
+    "raw2dmp", "sessions", "shellbags", "shimcache", "shutdowntime", "sockets", "sockscan", "ssdt", "strings", "svcscan", "symlinkscan", "thrdscan",
+    "threads", "timeliner", "timers", "truecryptmaster", "truecryptpassphrase", "truecryptsummary", "unloadedmodules", "userassist", "userhandles",
+    "vaddump", "vadinfo", "vadtree", "vadwalk", "vboxinfo", "verinfo", "vmwareinfo", "windows", "wintree", "wndscan"]
 
 dump_noDir = ["hashdump", "cachedump"]
 extra = ["psscan --output=dot --output-file=psscan.dot"]
@@ -108,6 +114,7 @@ extra = ["psscan --output=dot --output-file=psscan.dot"]
 
 class ThreadVol(threading.Thread):
     """Threaded Volatility"""
+
     def __init__(self, queue, out_dir, memfile, profile, vol_path):
         threading.Thread.__init__(self)
         self.queue = queue
@@ -118,7 +125,7 @@ class ThreadVol(threading.Thread):
 
     def run(self):
         while True:
-            #grabs plugin from queue
+            # grabs plugin from queue
             plugin = self.queue.get()
 
             # Set plugin dir
@@ -131,34 +138,38 @@ class ThreadVol(threading.Thread):
             if find_key(pluginsDict, plugin) == "dumps" and not plugin in dump_noDir:
                 # Sub-directory for plugin that dump files
                 plugin_dir = plugin_dir+"/"+plugin
-                cmd = self.vol_path+" -f "+ self.memfile+" --profile="+self.profile+" "+plugin+"  --dump-dir="+plugin_dir
+                cmd = self.vol_path+" -f " + self.memfile+" --profile="+self.profile+" "+plugin+"  --dump-dir="+plugin_dir
             else:
-                cmd = self.vol_path+" -f "+ self.memfile+" --profile="+self.profile+" "+plugin
+                cmd = self.vol_path+" -f " + self.memfile+" --profile="+self.profile+" "+plugin
             # Create plugin dir
             if not os.path.exists(plugin_dir):
                 os.makedirs(plugin_dir)
             print cmd
             pw = Popen(cmd.split(), stdout=PIPE, stderr=PIPE)
-            stdout,stderr = pw.communicate()
-            if stderr: print plugin + ": " + stderr
+            stdout, stderr = pw.communicate()
+            if stderr:
+                print plugin + ": " + stderr
 
             # Write the output
             if plugin not in extra:
-                with open(plugin_dir+"/"+plugin+".txt",'w') as f:
+                with open(plugin_dir+"/"+plugin+".txt", 'w') as f:
                     f.write(stdout)
 
-            #signals to queue job is done
+            # signals to queue job is done
             self.queue.task_done()
+
 
 def find_key(input_dict, value):
     return next((k for k, v in input_dict.items() if value in v), None)
 
 # Get profile of a memfile
+
+
 def getProfile(file, vol_path):
     cmd = vol_path+" -f "+file+" imageinfo"
     print cmd
     pw = Popen(cmd, stdout=PIPE, stderr=PIPE, shell=True)
-    stdout,stderr = pw.communicate()
+    stdout, stderr = pw.communicate()
     print stderr
     for line in stdout.split('\n'):
         if "Suggested Profile(s)" in line:
@@ -173,7 +184,8 @@ def main(argv):
     global plugins, plugins_all
     hlp = "autoVol.py -f MEMFILE -d DIRECTORY [-e VOLATILITY-PATH] [-a] [-p PROFILE] [-c 'plugin1,plugin2,plugin3']"
     try:
-        opts, args = getopt.getopt(argv,"hf:d:p:c:ae:t:",["help","file","directory=","profile=","console=","all", "volatility-path=", "threads="])
+        opts, args = getopt.getopt(argv, "hf:d:p:c:ae:t:", ["help", "file", "directory=",
+                                   "profile=", "console=", "all", "volatility-path=", "threads="])
     except getopt.GetoptError, err:
         print "~ %s" % str(err)
         print hlp
@@ -186,14 +198,14 @@ def main(argv):
             print hlp
             sys.exit()
 
-        elif opt in ("-f","--file"):
+        elif opt in ("-f", "--file"):
             memfile = arg
             directory = os.path.splitext(memfile)[0]+'_autovol'
             if not os.path.exists(memfile):
                 print "File in path "+memfile+" does not exists"
                 sys.exit()
 
-        elif opt in ("-d","--directory"):
+        elif opt in ("-d", "--directory"):
             directory = arg
             if not os.path.exists(directory):
                 try:
@@ -205,7 +217,7 @@ def main(argv):
                 print "Not a directory or not enough permissions: "+directory
                 sys.exit()
 
-        elif opt in ("-p","--profile"):
+        elif opt in ("-p", "--profile"):
             profile = arg
 
         elif opt in ("-c", "--console"):
@@ -220,8 +232,6 @@ def main(argv):
         elif opt in ("-t", "--threads"):
             threads = int(arg)
 
-
-
     if not directory:
         print "Set a directory using the option -d"
         print hlp
@@ -235,8 +245,8 @@ def main(argv):
             sys.exit()
     print "Using profile: "+profile
 
-    #populate queue with data
-    if console == "": # If not console, default plugins
+    # populate queue with data
+    if console == "":  # If not console, default plugins
         # for plugin in dump_plugins:
         #     queue.put(plugin)
         for plugin in extra:
@@ -249,19 +259,19 @@ def main(argv):
             for plugin in plugins:
                 queue.put(plugin)
 
-    else: #If console, only pllugins defined in console
+    else:  # If console, only pllugins defined in console
         plugins = console.split(",")
         for plugins in plugin:
             queue.put(plugin)
 
-    #run X threads
+    # run X threads
     for i in range(threads):
         t = ThreadVol(queue, directory, memfile, profile, vol_path)
         t.setDaemon(True)
         t.start()
         time.sleep(0.1)
 
-    #wait on the queue until everything has been processed
+    # wait on the queue until everything has been processed
     queue.join()
     print "Elapsed Time: %s" % (time.time() - start)
 
