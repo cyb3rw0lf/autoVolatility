@@ -11,8 +11,10 @@ from subprocess import Popen, PIPE
 queue = Queue.Queue()
 start = time.time()
 
+vol_exec = "vol2"
+plugins_dir = os.path.dirname(__file__) + "/plugins/"
 # The command to run volatility with all community plugins
-volatility_cmd = "vol2 --plugins=/opt/volatility2/community"
+volatility_cmd = vol_exec + " --plugins=" + plugins_dir
 
 # Use community plugins
 pluginsDict = {
