@@ -64,7 +64,8 @@ pluginsDict = {
               "screenshot",
               "networkpackets"],
 
-    "others": ["clipboard",
+    "others": ["imageinfo",
+               "clipboard",
                "amcache",
                "auditpol",
                "deskscan",
