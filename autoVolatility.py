@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python2
 import Queue
 import threading
 import time
@@ -60,8 +60,6 @@ pluginsDict = {
     "dumps": ["procdump",
               "cachedump",
               "dumpcerts",
-              "dumpregistry",
-              "dumpfiles",
               "dumpregistry",
               "hashdump",
               "screenshot",
