@@ -48,30 +48,30 @@ pluginsDict = {
                  "chromehistory",
                  "chromesearchterms",
                  "chromevisits",
+                 # "iehistory", # Takes too much time
                  "firefoxcookies",
                  "firefoxdownloads",
-                 "firefoxhistory",
-                 "iehistory"],
+                 "firefoxhistory"],
 
     "malware": ["malfind",
                 "malfinddeep",
                 "malfofind",
-                "malprocfind",
-                "malthfind"],
+                # "malthfind",  # Plugin is broken
+                "malprocfind"],
 
     "dumps": ["procdump",
               "cachedump",
-              "dumpcerts",
+              #   "dumpcerts", # Takes too much time
               "dumpregistry",
               "hashdump",
-              "screenshot",
-              "networkpackets"],
+              #   "networkpackets", # Plugin is broken
+              "screenshot"],
 
     "others": ["imageinfo",
                "clipboard",
                "amcache",
                "auditpol",
-               "deskscan",
+               #    "deskscan", # Not Helpful
                "devicetree",
                "dlllist",
                "envars",
@@ -80,16 +80,15 @@ pluginsDict = {
                "ldrmodules",
                "lsadump",
                "mbrparser",
-               "memmap",
+               #    "memmap", # Takes too much time, not helpful
                "mftparser",
                "modules",
                "notepad",
                "privs",
                "qemuinfo",
                "ssdt",
-               "strings",
                "symlinkscan",
-               "thrdscan",
+               #    "thrdscan", # Not helpful
                "verinfo",
                "windows",
                "wintree"]
