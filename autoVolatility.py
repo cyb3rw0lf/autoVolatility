@@ -261,7 +261,7 @@ def main(argv):
 
     else:  # If console, only pllugins defined in console
         plugins = console.split(",")
-        for plugins in plugin:
+        for plugin in plugins:
             queue.put(plugin)
 
     # run X threads
