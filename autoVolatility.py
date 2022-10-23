@@ -12,7 +12,7 @@ queue = Queue.Queue()
 start = time.time()
 
 vol_exec = "vol2"
-plugins_dir = os.path.dirname(__file__) + "/plugins/"
+plugins_dir = os.path.dirname(os.path.realpath(__file__)) + "/plugins/"
 # The command to run volatility with all community plugins
 volatility_cmd = vol_exec + " --plugins=" + plugins_dir
 
